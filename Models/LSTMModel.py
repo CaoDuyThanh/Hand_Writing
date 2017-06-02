@@ -70,6 +70,9 @@ class LSTMModel():
                                          updates = updates,
                                          outputs = [cost])
 
+        self.ValidFunc = theano.function(inputs  = [self.Input, self.Target],
+                                         outputs = [cost])
+
         self.PredFunc  = theano.function(inputs  = [self.Input],
                                          outputs = [pred])
 
