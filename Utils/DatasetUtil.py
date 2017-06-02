@@ -1,7 +1,8 @@
 import scipy.io
 from random import shuffle
 from Utils.FileHelper import *
-
+import re
+import math
 
 class DatasetUtil():
     TRAIN_RATIO = 0.9
@@ -21,7 +22,7 @@ class DatasetUtil():
         self.TrainTrjPath   = self.DatasetPath + 'Trj/'
 
         # Constant
-        self.Character = '01234567890ABCCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        self.Character = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 
         # Load data
         self.loadTrainFiles()
@@ -60,13 +61,17 @@ class DatasetUtil():
         rows    = content.split('\r\n\r\n')[0]
         cols    = content.split('\r\n\r\n')[1]
 
-        rows    = map(float, rows[rows.find('[') + 1 : rows.find(']')].split('\r\n')[:-1])
-        cols    = map(float, cols[cols.find('[') + 1 : cols.find(']')].split('\r\n')[:-1])
+        # rows    = map(float, rows[rows.find('[') + 1 : rows.find(']')].split('\r\n')[:-1])
+        # cols    = map(float, cols[cols.find('[') + 1 : cols.find(']')].split('\r\n')[:-1])
+        rows = map(float, re.findall('[+-]?\d+\.\d+[eE][+-]?\d+', rows))
+        cols = map(float, re.findall('[+-]?\d+\.\d+[eE][+-]?\d+', cols))
+
 
         data = dict()
-        data['rows'] = numpy.asarray(rows, dtype = 'float32')
-        data['cols'] = numpy.asarray(cols, dtype = 'float32')
+        data['rows'] = numpy.asarray(rows, dtype = 'float32') / 600. - 0.5
+        data['cols'] = numpy.asarray(cols, dtype = 'float32') / 900. - 0.5
 
         file.close()
 
         return data
+
