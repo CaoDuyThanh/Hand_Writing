@@ -1,6 +1,7 @@
 import random
 from Tkinter import *
 from Models.LSTMModel import *
+from Models.RNNModel import *
 from Utils.DatasetUtil import *
 
 # TRAINING CONFIG
@@ -22,17 +23,18 @@ TRANS_LIMIT     = 0.2
 SHEAR_LIMIT     = 0.5
 SCALE_LIMIT     = 0.2
 
+# NETWORK CONFIG
+NETWORK_TYPE = 'LSTM'
+INPUT_SIZE   = 2
+HIDDEN_SIZE  = 256
+OUTPUT_SIZE  = 62
+
 # PATH SETTINGS
 DATASET_PATH  = '../Dataset/English/'
-SAVE_PATH     = '../Pretrained/Epoch=%d_Iter=%d.pkl'
-BEST_PATH     = '../Pretrained/Best.pkl'
-RECORD_PATH   = '../Pretrained/Record.pkl'
-STATE_PATH    = '../Pretrained/CurrentState.pkl'
-
-# NETWORK CONFIG
-INPUT_SIZE  = 2
-HIDDEN_SIZE = 256
-OUTPUT_SIZE = 62
+SAVE_PATH     = '../Pretrained/' + NETWORK_TYPE + '/Epoch=%d_Iter=%d.pkl'
+BEST_PATH     = '../Pretrained/' + NETWORK_TYPE + '/Best.pkl'
+RECORD_PATH   = '../Pretrained/' + NETWORK_TYPE + '/Record.pkl'
+STATE_PATH    = '../Pretrained/' + NETWORK_TYPE + '/CurrentState.pkl'
 
 # GLOBAL VARIABLES
 Dataset   = None
@@ -55,11 +57,18 @@ def ReadDataset():
 ###############################
 def CreateModel():
     global Model
-    Model = LSTMModel(
-                inputSize  = INPUT_SIZE,
-                numHidden  = HIDDEN_SIZE,
-                outputSize = OUTPUT_SIZE
-            )
+    if NETWORK_TYPE == 'LSTM':
+        Model = LSTMModel(
+                    inputSize  = INPUT_SIZE,
+                    numHidden  = HIDDEN_SIZE,
+                    outputSize = OUTPUT_SIZE
+                )
+    else:
+        Model = RNNModel(
+                    inputSize = INPUT_SIZE,
+                    numHidden=HIDDEN_SIZE,
+                    outputSize=OUTPUT_SIZE
+                )
 
 ###########################
 #      VALID MODEL        #
