@@ -17,8 +17,6 @@ class LSTMModel():
         # Create tensor variables to store input / output data
         self.Input  = T.tensor3('Input')
         self.Target = T.ivector('Target')
-        self.CState = T.matrix('CState', dtype='float32')
-        self.HState = T.matrix('HState', dtype='float32')
 
         # Parse data
         numSteps   = self.Input.shape[0]
