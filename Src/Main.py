@@ -1,6 +1,7 @@
+import random
+from Tkinter import *
 from Models.LSTMModel import *
 from Utils.DatasetUtil import *
-import random
 
 # TRAINING CONFIG
 NUM_EPOCH          = 10
@@ -94,6 +95,43 @@ def ValidModel(Model, validData):
     print ('----------------------------------- VALIDATION (DONE) ----------------------------------------------------')
 
     return numpy.mean(AllCosts)
+
+###########################
+#      TEST MODEL         #
+###########################
+def TestModel(Model, testData):
+    print ('----------------------------------- VALIDATION -----------------------------------------------------------')
+
+    AllPrec = 0
+    iter  = 0
+    for validDataIdx, validSample in enumerate(testData):
+        trj  = validSample['Trj']
+        rows = trj['rows']
+        cols = trj['cols']
+
+        rows = rows.reshape((rows.shape[0], 1))
+        cols = cols.reshape((cols.shape[0], 1))
+
+        input = numpy.concatenate((rows, cols), axis=1)
+        input = input.reshape(input.shape[0], 1, input.shape[1])
+
+        char = validSample['Char']
+        char = char.reshape((1,))
+
+        iter += 1
+        pred = Model.PredFunc(input)
+        prec = 0
+        for idx in range(len(pred)):
+            if pred[idx] == char[idx]:
+                prec += 1
+        AllPrec += prec
+
+    precision = AllPrec * 1.0 / len(testData)
+    print ('Precision = %f' % (precision))
+    print ('----------------------------------- VALIDATION (DONE) ----------------------------------------------------')
+
+    return precision
+
 
 ###########################
 #      TRAIN MODEL        #
@@ -248,7 +286,81 @@ def AugmentData(input):
     input = input.reshape((input.shape[0], 1, input.shape[1]))
     return input
 
+def Test():
+    global Model, \
+           Dataset
 
+    # Load model
+    if CheckFileExist(BEST_PATH, throwError=False):
+        file = open(BEST_PATH)
+        Model.LoadModel(file)
+        file.close()
+        print ('Load best model !')
+
+    TestModel(Model, Dataset.ValidData)
+    TestModel(Model, Dataset.TestData)
+
+inputRaw = None
+w        = None
+def DrawCharacter():
+    global Model, \
+           Dataset, \
+           inputRaw, \
+           w
+
+    # Load model
+    if CheckFileExist(BEST_PATH, throwError=False):
+        file = open(BEST_PATH)
+        Model.LoadModel(file)
+        file.close()
+        print ('Load best model !')
+
+    canvas_width  = 900
+    canvas_height = 600
+
+    inputRaw = []
+    def paint(event):
+        global inputRaw
+
+        python_green = "#476042"
+        x1, y1 = (event.x - 1), (event.y - 1)
+        x2, y2 = (event.x + 1), (event.y + 1)
+        w.create_oval(x1, y1, x2, y2, fill=python_green)
+
+        col = event.x / 900. - 0.5
+        row = event.y / 600. - 0.5
+        inputRaw.append([row, col])
+
+    def KeyPress(event):
+        global inputRaw, \
+               Dataset,  \
+               w
+
+        if event.char == 'r':
+            inputRaw = []
+            w.delete('all')
+        if event.char == 'e':
+            input = numpy.asarray(inputRaw, dtype = 'float32')
+            input = input.reshape((input.shape[0], 1, input.shape[1]))
+
+            pred = Model.PredFunc(input)
+            print Dataset.Character[pred[0]]
+
+    master = Tk()
+    master.title("Painting using Ovals")
+    w = Canvas(master,
+               width  = canvas_width,
+               height = canvas_height)
+    w.pack(expand = NO, fill = BOTH)
+    w.focus_set()
+    w.bind('<Key>', KeyPress)
+    w.bind('<B1-Motion>', paint)
+
+
+    message = Label(master, text = "Press and Drag the mouse to draw")
+    message.pack(side = BOTTOM)
+
+    mainloop()
 
 #############################################################################################
 #                                                                                           #
@@ -262,5 +374,7 @@ def GenerateData():
 if __name__ == '__main__':
     ReadDataset()
     CreateModel()
-    TrainModel()
-    GenerateData()
+    DrawCharacter()
+    # Test()
+    # TrainModel()
+    # GenerateData()
