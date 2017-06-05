@@ -128,3 +128,17 @@ class LSTMNet(NeuralNet):
 
         # Network name for saving
         self.NetName = 'LSTMNet'
+
+class RNNNet(NeuralNet):
+    def __init__(self):
+        NeuralNet.__init__(self)
+
+        # Setting default options for layer_opts
+        # Default options for rnn layers
+        self.LayerOpts['rnn_num_hidden']   = 500
+        self.LayerOpts['rnn_inputs_size']  = None
+        self.LayerOpts['rnn_num_truncate'] = 20
+        self.LayerOpts['rnn_params']       = None
+
+        # Network name for saving
+        self.NetName = 'RNNNet'

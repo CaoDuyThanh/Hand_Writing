@@ -10,6 +10,7 @@ from PermuteLayer import *
 from FlattenLayer import *
 from NormalizeLayer import *
 from LSTMLayer import *
+from RNNLayer import *
 
 # Cost layer
 from L2CostLayer import *
