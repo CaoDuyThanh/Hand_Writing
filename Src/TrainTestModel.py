@@ -13,8 +13,8 @@ VALIDATE_FREQUENCY = 5000
 SAVE_FREQUENCY     = 2500
 
 # EARLY STOPPING
-PATIENCE = 50000
-PATIENCE_INCREASE = 2
+PATIENCE              = 50000
+PATIENCE_INCREASE     = 2
 IMPROVEMENT_THRESHOLD = 0.9999995
 
 # AUGEMENT SETTING
@@ -24,7 +24,7 @@ SHEAR_LIMIT     = 0.5
 SCALE_LIMIT     = 0.2
 
 # NETWORK CONFIG
-NETWORK_TYPE = 'LSTM'
+NETWORK_TYPE = 'RNN'
 INPUT_SIZE   = 2
 HIDDEN_SIZE  = 256
 OUTPUT_SIZE  = 62
@@ -37,8 +37,8 @@ RECORD_PATH   = '../Pretrained/' + NETWORK_TYPE + '/Record.pkl'
 STATE_PATH    = '../Pretrained/' + NETWORK_TYPE + '/CurrentState.pkl'
 
 # GLOBAL VARIABLES
-Dataset   = None
-Model = None
+Dataset = None
+Model   = None
 
 ######################################
 #      READ TIME SERIES DATASET      #
@@ -52,9 +52,9 @@ def ReadDataset():
     file.close()
 
 
-###############################
-#      CREATE LSTM MODEL      #
-###############################
+################################
+#   CREATE TIME-SERIES MODEL   #
+################################
 def CreateModel():
     global Model
     if NETWORK_TYPE == 'LSTM':
@@ -105,41 +105,6 @@ def ValidModel(Model, validData):
 
     return numpy.mean(AllCosts)
 
-###########################
-#      TEST MODEL         #
-###########################
-def TestModel(Model, testData):
-    print ('----------------------------------- VALIDATION -----------------------------------------------------------')
-
-    AllPrec = 0
-    iter  = 0
-    for validDataIdx, validSample in enumerate(testData):
-        trj  = validSample['Trj']
-        rows = trj['rows']
-        cols = trj['cols']
-
-        rows = rows.reshape((rows.shape[0], 1))
-        cols = cols.reshape((cols.shape[0], 1))
-
-        input = numpy.concatenate((rows, cols), axis=1)
-        input = input.reshape(input.shape[0], 1, input.shape[1])
-
-        char = validSample['Char']
-        char = char.reshape((1,))
-
-        iter += 1
-        pred = Model.PredFunc(input)
-        prec = 0
-        for idx in range(len(pred)):
-            if pred[idx] == char[idx]:
-                prec += 1
-        AllPrec += prec
-
-    precision = AllPrec * 1.0 / len(testData)
-    print ('Precision = %f' % (precision))
-    print ('----------------------------------- VALIDATION (DONE) ----------------------------------------------------')
-
-    return precision
 
 
 ###########################
@@ -185,19 +150,6 @@ def TrainModel():
 
             char  = trainSample['Char']
             char  = char.reshape((1,))
-
-            # for k in range(10):
-            #     plt.plot(input[:, 0, 1], -input[:, 0, 0])
-            #     plt.axis([-0.5, 0.5, -0.5, 0.5])
-            #     plt.show()
-            #
-            #     plt.plot(auInput[:, 0, 1], -auInput[:, 0, 0])
-            #     plt.axis([-0.5, 0.5, -0.5, 0.5])
-            #     plt.show()
-            #
-            #     print ('%s' % Dataset.Character[char])
-            #     plt.pause(2)
-            #     plt.close()
 
             auInput = AugmentData(input)
 
@@ -295,95 +247,57 @@ def AugmentData(input):
     input = input.reshape((input.shape[0], 1, input.shape[1]))
     return input
 
-def Test():
+###########################
+#      TEST MODEL         #
+###########################
+def TestModel():
     global Model, \
            Dataset
 
-    # Load model
+    # Load best model
     if CheckFileExist(BEST_PATH, throwError=False):
         file = open(BEST_PATH)
         Model.LoadModel(file)
         file.close()
         print ('Load best model !')
 
-    TestModel(Model, Dataset.ValidData)
-    TestModel(Model, Dataset.TestData)
+    print ('----------------------------------- TEST -----------------------------------------------------------------')
+    testData = Dataset.TestData
+    AllPrec = 0
+    iter = 0
+    for validDataIdx, validSample in enumerate(testData):
+        trj = validSample['Trj']
+        rows = trj['rows']
+        cols = trj['cols']
 
-inputRaw = None
-w        = None
-def DrawCharacter():
-    global Model, \
-           Dataset, \
-           inputRaw, \
-           w
+        rows = rows.reshape((rows.shape[0], 1))
+        cols = cols.reshape((cols.shape[0], 1))
 
-    # Load model
-    if CheckFileExist(BEST_PATH, throwError=False):
-        file = open(BEST_PATH)
-        Model.LoadModel(file)
-        file.close()
-        print ('Load best model !')
+        input = numpy.concatenate((rows, cols), axis=1)
+        input = input.reshape(input.shape[0], 1, input.shape[1])
 
-    canvas_width  = 900
-    canvas_height = 600
+        char = validSample['Char']
+        char = char.reshape((1,))
 
-    inputRaw = []
-    def paint(event):
-        global inputRaw
+        iter += 1
+        pred = Model.PredFunc(input)
+        prec = 0
+        for idx in range(len(pred)):
+            if pred[idx] == char[idx]:
+                prec += 1
+        AllPrec += prec
 
-        python_green = "#476042"
-        x1, y1 = (event.x - 1), (event.y - 1)
-        x2, y2 = (event.x + 1), (event.y + 1)
-        w.create_oval(x1, y1, x2, y2, fill=python_green)
-
-        col = event.x / 900. - 0.5
-        row = event.y / 600. - 0.5
-        inputRaw.append([row, col])
-
-    def KeyPress(event):
-        global inputRaw, \
-               Dataset,  \
-               w
-
-        if event.char == 'r':
-            inputRaw = []
-            w.delete('all')
-        if event.char == 'e':
-            input = numpy.asarray(inputRaw, dtype = 'float32')
-            input = input.reshape((input.shape[0], 1, input.shape[1]))
-
-            pred = Model.PredFunc(input)
-            print Dataset.Character[pred[0]]
-
-    master = Tk()
-    master.title("Painting using Ovals")
-    w = Canvas(master,
-               width  = canvas_width,
-               height = canvas_height)
-    w.pack(expand = NO, fill = BOTH)
-    w.focus_set()
-    w.bind('<Key>', KeyPress)
-    w.bind('<B1-Motion>', paint)
-
-
-    message = Label(master, text = "Press and Drag the mouse to draw")
-    message.pack(side = BOTTOM)
-
-    mainloop()
-
-#############################################################################################
-#                                                                                           #
-#      GENERATE SEQUENCE                                                                    #
-#                                                                                           #
-#############################################################################################
-def GenerateData():
-    return 0
-
+    precision = AllPrec * 1.0 / len(testData)
+    print ('Precision = %f' % (precision))
+    print ('----------------------------------- TEST (DONE) ----------------------------------------------------------')
 
 if __name__ == '__main__':
     ReadDataset()
     CreateModel()
-    DrawCharacter()
-    # Test()
-    # TrainModel()
-    # GenerateData()
+    TrainModel()
+    TestModel()
+
+
+# print ('%s' % Dataset.Character[char])
+#     plt.pause(2)
+#     plt.close()
