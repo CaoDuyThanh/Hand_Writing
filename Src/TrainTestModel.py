@@ -47,11 +47,6 @@ def ReadDataset():
     global Dataset
     Dataset = DatasetUtil(datasetPath = DATASET_PATH)
 
-    file = open('../Dataset/strokes_training_data.cpkl')
-
-    file.close()
-
-
 ################################
 #   CREATE TIME-SERIES MODEL   #
 ################################
